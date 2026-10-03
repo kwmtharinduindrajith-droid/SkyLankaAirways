@@ -13,5 +13,6 @@ import java.util.Optional;
 public interface FlightRepository extends JpaRepository<Flight, Long> {
     Optional<Flight> findByFlightNumber(String flightNumber);
     boolean existsByFlightNumber(String flightNumber);
+    boolean existsByAircraft(com.skylanka.airline.entity.Aircraft aircraft);
     List<Flight> findByRouteAndDepartureTimeBetween(Route route, LocalDateTime start, LocalDateTime end);
 }

@@ -20,12 +20,25 @@ public class Route {
     private double distanceKm;
     private int baseDurationMinutes;
 
+    @Column(nullable = false, columnDefinition = "BIT DEFAULT 1")
+    private boolean active = true;
+
     public Route() {}
+
     public Route(Airport origin, Airport destination, double distanceKm, int baseDurationMinutes) {
         this.origin = origin;
         this.destination = destination;
         this.distanceKm = distanceKm;
         this.baseDurationMinutes = baseDurationMinutes;
+        this.active = true;
+    }
+
+    public Route(Airport origin, Airport destination, double distanceKm, int baseDurationMinutes, boolean active) {
+        this.origin = origin;
+        this.destination = destination;
+        this.distanceKm = distanceKm;
+        this.baseDurationMinutes = baseDurationMinutes;
+        this.active = active;
     }
 
     public Long getId() { return id; }
@@ -39,4 +52,6 @@ public class Route {
     public int getBaseDurationMinutes() { return baseDurationMinutes; }
     public int getDurationMinutes() { return baseDurationMinutes; }
     public void setBaseDurationMinutes(int baseDurationMinutes) { this.baseDurationMinutes = baseDurationMinutes; }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 }

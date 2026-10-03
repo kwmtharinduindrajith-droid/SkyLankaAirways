@@ -21,12 +21,23 @@ public class Airport {
     @Column(nullable = false)
     private String country;
 
+    @Column(nullable = false, columnDefinition = "BIT DEFAULT 1")
+    private boolean active = true;
+
     public Airport() {}
     public Airport(String airportCode, String airportName, String city, String country) {
         this.airportCode = airportCode;
         this.airportName = airportName;
         this.city = city;
         this.country = country;
+        this.active = true;
+    }
+    public Airport(String airportCode, String airportName, String city, String country, boolean active) {
+        this.airportCode = airportCode;
+        this.airportName = airportName;
+        this.city = city;
+        this.country = country;
+        this.active = active;
     }
 
     public Long getId() { return id; }
@@ -41,4 +52,6 @@ public class Airport {
     public void setCity(String city) { this.city = city; }
     public String getCountry() { return country; }
     public void setCountry(String country) { this.country = country; }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 }
