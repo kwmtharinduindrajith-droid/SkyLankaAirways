@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight History - SkyLanka AMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/custom.css}">
+    <style>
+        .history-row { transition: background 0.15s; }
+        .history-row:hover { background: #f8fafc !important; }
+
+        .route-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #f1f5f9; border-radius: 50px;
+            padding: 4px 10px; font-size: 0.78rem; font-weight: 700;
+        }
+        .route-pill .iata {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #1e293b; color: white;
+            border-radius: 6px; padding: 2px 7px;
+            font-size: 0.72rem; letter-spacing: 0.5px;
+        }
+        .route-pill .arrow { color: #94a3b8; font-size: 0.8rem; }
+
+        .time-cell .date { font-size: 0.72rem; color: #94a3b8; }
+        .time-cell .time { font-size: 0.9rem; font-weight: 700; color: #1e293b; }
+    </style>
+</head>
+<body class="ams-body">
+<div class="ams-layout">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/manager-sidebar :: sidebar}"></div>
+
+    <!-- Main Content -->
+    <div class="ams-main">
+        <!-- Header -->
+        <div th:replace="~{fragments/manager-sidebar :: header(pageTitle='Flight History')}"></div>
+
+        <div class="ams-content">
+
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 mb-4" role="alert" style="border-radius: 12px;">
+                <i class="bi bi-check-circle-fill me-2"></i><span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${infoMessage}" class="alert alert-info alert-dismissible fade show border-0 mb-4" role="alert" style="border-radius: 12px;">
+                <i class="bi bi-info-circle-fill me-2"></i><span th:text="${infoMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 mb-4" role="alert" style="border-radius: 12px;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- ── PAGE STRIP ── -->
+            <div class="ams-page-strip d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                <div>
+                    <div style="font-size:0.72rem; color:#60a5fa; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">
+                        <i class="bi bi-archive me-1"></i> Archive Records
+                    </div>
+                    <h4 class="fw-bold text-white mb-1">Flight History</h4>
+                    <p style="color:rgba(255,255,255,0.55); margin:0; font-size:0.85rem;">
+                        Automatically archived completed flights and their operational snapshots.
+                    </p>
+                </div>
+            </div>
+
+            <!-- ── KPI CARDS ── -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-lg-4">
+                    <div class="ams-kpi-card kpi-primary hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-primary"><i class="bi bi-clock-history"></i></div>
+                        </div>
+                        <div class="ams-kpi-label">Total Archived</div>
+                        <div class="ams-kpi-value" th:text="${totalArchived}">0</div>
+                        <div class="ams-kpi-sub">All historical records</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-4">
+                    <div class="ams-kpi-card kpi-success hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-success"><i class="bi bi-calendar-day"></i></div>
+                        </div>
+                        <div class="ams-kpi-label">Archived Today</div>
+                        <div class="ams-kpi-value" th:text="${archivedToday}">0</div>
+                        <div class="ams-kpi-sub">New today</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-4">
+                    <div class="ams-kpi-card kpi-info hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-info"><i class="bi bi-calendar-month"></i></div>
+                        </div>
+                        <div class="ams-kpi-label">Archived This Month</div>
+                        <div class="ams-kpi-value" th:text="${archivedThisMonth}">0</div>
+                        <div class="ams-kpi-sub">Monthly total</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── HISTORY TABLE ── -->
+            <div class="ams-card">
+                <div class="ams-card-header flex-column flex-md-row align-items-start align-items-md-center gap-3">
+                    <h6 class="ams-card-title mb-0">
+                        <span class="ti-blue"><i class="bi bi-archive"></i></span>
+                        Archived Flight Logs
+                        <span class="badge ms-2"
+                              style="background:#eff6ff; color:#3b82f6; font-size:0.72rem; font-weight:700; border-radius:50px; padding:3px 10px;"
+                              th:text="${#lists.size(historyList)} + ' records'">0 records</span>
+                    </h6>
+
+                    <div class="ms-md-auto">
+                        <div class="input-group" style="max-width:260px;">
+                            <span class="input-group-text bg-white border-end-0" style="border-radius:10px 0 0 10px;">
+                                <i class="bi bi-search text-muted" style="font-size:0.8rem;"></i>
+                            </span>
+                            <input type="text" id="historySearch" class="form-control form-control-sm border-start-0"
+                                   placeholder="Search flight, route…" style="border-radius:0 10px 10px 0;"
+                                   onkeyup="filterHistory()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="ams-table" id="historyTable">
+                        <thead>
+                            <tr>
+                                <th class="ps-5">Archived At</th>
+                                <th>Flight No.</th>
+                                <th>Route</th>
+                                <th>Aircraft</th>
+                                <th>Departure / Arrival</th>
+                                <th>Seats (Total / Avail)</th>
+                                <th>Fares (Eco / Biz)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${#lists.isEmpty(historyList)}">
+                                <td colspan="8">
+                                    <div class="ams-empty-state">
+                                        <i class="bi bi-archive"></i>
+                                        <p>No historical flights archived yet. Flights are automatically archived after they complete.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="history-row" th:each="h : ${historyList}">
+                                <!-- Archived At -->
+                                <td class="ps-5">
+                                    <div class="time-cell">
+                                        <div class="time" th:text="${#temporals.format(h.archivedAt, 'HH:mm')}">00:00</div>
+                                        <div class="date" th:text="${#temporals.format(h.archivedAt, 'dd MMM yyyy')}">Date</div>
+                                    </div>
+                                </td>
+                                <!-- Flight No -->
+                                <td>
+                                    <div class="flight-no fw-bold" style="font-size:0.92rem; color:#1e293b;" th:text="${h.flightNumber}">UL-101</div>
+                                    <div style="font-size:0.7rem; color:#94a3b8; font-weight:600;">ID: <span th:text="${h.originalFlightId}">1</span></div>
+                                </td>
+                                <!-- Route -->
+                                <td>
+                                    <div class="route-pill">
+                                        <span class="iata route-origin" th:text="${h.origin}">CMB</span>
+                                        <i class="bi bi-arrow-right arrow"></i>
+                                        <span class="iata route-dest" th:text="${h.destination}">DXB</span>
+                                    </div>
+                                </td>
+                                <!-- Aircraft -->
+                                <td>
+                                    <div style="font-size:0.85rem; font-weight:700; color:#1e293b;" th:text="${h.aircraftRegistration}">4R-ALC</div>
+                                    <div style="font-size:0.72rem; color:#94a3b8;" th:text="${h.aircraftModel}">A330</div>
+                                </td>
+                                <!-- Schedule -->
+                                <td>
+                                    <div class="time-cell mb-1">
+                                        <i class="bi bi-box-arrow-right text-success me-1" style="font-size:0.7rem;"></i>
+                                        <span class="dep-time fw-semibold" th:text="${#temporals.format(h.departureTime, 'dd MMM, HH:mm')}"></span>
+                                    </div>
+                                    <div class="time-cell">
+                                        <i class="bi bi-box-arrow-in-right text-danger me-1" style="font-size:0.7rem;"></i>
+                                        <span th:text="${#temporals.format(h.arrivalTime, 'dd MMM, HH:mm')}"></span>
+                                    </div>
+                                </td>
+                                <!-- Seats -->
+                                <td>
+                                    <span class="fw-bold" th:text="${h.totalSeats}">0</span>
+                                    <span class="text-muted">/</span>
+                                    <span th:text="${h.availableSeats}">0</span>
+                                </td>
+                                <!-- Fares -->
+                                <td>
+                                    <div style="font-size:0.78rem;"><span style="color:#94a3b8; font-size:0.68rem;">ECO</span> <span class="fw-bold text-success" th:text="'$' + ${#numbers.formatDecimal(h.economyFare, 1, 0)}">$0</span></div>
+                                    <div style="font-size:0.78rem; margin-top:2px;"><span style="color:#94a3b8; font-size:0.68rem;">BIZ</span> <span class="fw-bold text-primary" th:text="'$' + ${#numbers.formatDecimal(h.businessFare, 1, 0)}">$0</span></div>
+                                </td>
+                                <!-- Status -->
+                                <td>
+                                    <span class="badge rounded-pill px-3 py-2 fw-bold"
+                                          style="background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; font-size:0.72rem;"
+                                          th:text="${h.finalStatus}">COMPLETED</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function filterHistory() {
+        const input = document.getElementById('historySearch').value.toLowerCase();
+        const rows = document.querySelectorAll('.history-row');
+        rows.forEach(row => {
+            const flightNo = row.querySelector('.flight-no')?.textContent.toLowerCase() || '';
+            const origin = row.querySelector('.route-origin')?.textContent.toLowerCase() || '';
+            const dest = row.querySelector('.route-dest')?.textContent.toLowerCase() || '';
+            const depTime = row.querySelector('.dep-time')?.textContent.toLowerCase() || '';
+
+            if (flightNo.includes(input) || origin.includes(input) || dest.includes(input) || depTime.includes(input)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+</body>
+</html>
