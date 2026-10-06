@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operations Dashboard - SkyLanka AMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/custom.css}">
+    <style>
+        /* ── Dashboard-local enhancements ── */
+        .status-bar { height: 8px; border-radius: 99px; background: #e8eef5; overflow: hidden; }
+        .status-bar-fill { height: 100%; border-radius: 99px; transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+
+        .stat-ring {
+            width: 90px; height: 90px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
+            font-size: 1.4rem; font-weight: 800; line-height: 1;
+            position: relative;
+        }
+        .stat-ring small { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .timeline-item { display: flex; gap: 14px; position: relative; padding-bottom: 20px; }
+        .timeline-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 15px; top: 32px; bottom: 0;
+            width: 2px;
+            background: #e8eef5;
+        }
+        .timeline-dot {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem;
+            z-index: 1;
+        }
+
+        .net-hub-card {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 14px;
+            padding: 18px;
+            border: 1px solid #e8eef5;
+            transition: all 0.2s;
+        }
+        .net-hub-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
+
+        .quick-btn {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            border: 1px solid #e8eef5;
+            background: white;
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .quick-btn:hover { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; transform: translateX(3px); }
+        .quick-btn .qb-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.1rem;
+        }
+        .quick-btn .qb-arrow { margin-left: auto; color: #94a3b8; transition: transform 0.2s; }
+        .quick-btn:hover .qb-arrow { transform: translateX(3px); color: #3b82f6; }
+
+        /* Gauge-style ring for OTP */
+        .otp-gauge {
+            width: 120px; height: 120px;
+            position: relative;
+            margin: 0 auto;
+        }
+        .otp-gauge svg { transform: rotate(-90deg); }
+        .otp-gauge .otp-label {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+
+        @keyframes fadeUp { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+        .ams-kpi-card, .ams-card { animation: fadeUp 0.4s ease both; }
+        .ams-kpi-card:nth-child(2) { animation-delay: 0.05s; }
+        .ams-kpi-card:nth-child(3) { animation-delay: 0.10s; }
+        .ams-kpi-card:nth-child(4) { animation-delay: 0.15s; }
+        .ams-kpi-card:nth-child(5) { animation-delay: 0.20s; }
+    </style>
+</head>
+<body class="ams-body">
+<div class="ams-layout">
+
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/manager-sidebar :: sidebar}"></div>
+
+    <!-- Main -->
+    <div class="ams-main">
+        <div th:replace="~{fragments/manager-sidebar :: header(pageTitle='Operations Dashboard')}"></div>
+
+        <div class="ams-content">
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- HERO BANNER                                            -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div class="ams-hero mb-4">
+                <div class="ams-hero-text flex-grow-1">
+                    <div class="ams-hero-badge"><i class="bi bi-broadcast-pin me-1"></i>LIVE OPERATIONS</div>
+                    <h1>Flight Operations Center</h1>
+                    <p class="mb-4">SkyLanka Airways &nbsp;·&nbsp; Airline Management System &nbsp;·&nbsp; Real-Time Network Control</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a th:href="@{/manager/flights/new}" class="btn btn-primary fw-bold px-4" style="border-radius: 10px; box-shadow: 0 4px 16px rgba(59,130,246,0.45);">
+                            <i class="bi bi-plus-circle me-2"></i>Schedule Flight
+                        </a>
+                        <a th:href="@{/manager/flights}" class="btn btn-outline-light fw-semibold px-4" style="border-radius: 10px;">
+                            <i class="bi bi-calendar-range me-2"></i>View Schedules
+                        </a>
+                        <a th:href="@{/manager/routes}" class="btn btn-outline-light fw-semibold px-4" style="border-radius: 10px;">
+                            <i class="bi bi-bezier2 me-2"></i>Manage Routes
+                        </a>
+                    </div>
+                </div>
+                <!-- Hero stats -->
+                <div class="d-none d-xl-flex gap-3 ms-5 align-items-center">
+                    <div class="ams-hero-stat">
+                        <div class="stat-num" th:text="${totalFlights}">0</div>
+                        <div class="stat-label">Total Flights</div>
+                    </div>
+                    <div class="ams-hero-stat">
+                        <div class="stat-num" th:text="${totalRoutes}">0</div>
+                        <div class="stat-label">Routes</div>
+                    </div>
+                    <div class="ams-hero-stat">
+                        <div class="stat-num" th:text="${totalAirports}">0</div>
+                        <div class="stat-label">Airports</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- KPI ROW — 5 CARDS                                     -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-xl">
+                    <div class="ams-kpi-card kpi-primary hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-primary"><i class="bi bi-airplane"></i></div>
+                            <span style="font-size: 0.68rem; color: #3b82f6; font-weight: 700; background: #eff6ff; padding: 2px 8px; border-radius: 50px;">FLEET</span>
+                        </div>
+                        <div class="ams-kpi-label">Total Flights</div>
+                        <div class="ams-kpi-value" th:text="${totalFlights}">0</div>
+                        <div class="ams-kpi-sub">All operations</div>
+                    </div>
+                </div>
+                <div class="col-6 col-xl">
+                    <div class="ams-kpi-card kpi-success hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-success"><i class="bi bi-check-circle"></i></div>
+                            <span style="font-size: 0.68rem; color: #10b981; font-weight: 700; background: #f0fdf4; padding: 2px 8px; border-radius: 50px;">LIVE</span>
+                        </div>
+                        <div class="ams-kpi-label">Scheduled</div>
+                        <div class="ams-kpi-value" th:text="${scheduledFlights}">0</div>
+                        <div class="ams-kpi-sub">On-time operations</div>
+                    </div>
+                </div>
+                <div class="col-6 col-xl">
+                    <div class="ams-kpi-card kpi-warning hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-warning"><i class="bi bi-clock-history"></i></div>
+                            <span style="font-size: 0.68rem; color: #f59e0b; font-weight: 700; background: #fffbeb; padding: 2px 8px; border-radius: 50px;">ALERT</span>
+                        </div>
+                        <div class="ams-kpi-label">Delayed</div>
+                        <div class="ams-kpi-value" th:text="${delayedFlights}">0</div>
+                        <div class="ams-kpi-sub">Needs attention</div>
+                    </div>
+                </div>
+                <div class="col-6 col-xl">
+                    <div class="ams-kpi-card kpi-danger hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-danger"><i class="bi bi-x-circle"></i></div>
+                            <span style="font-size: 0.68rem; color: #ef4444; font-weight: 700; background: #fef2f2; padding: 2px 8px; border-radius: 50px;">ISSUE</span>
+                        </div>
+                        <div class="ams-kpi-label">Cancelled</div>
+                        <div class="ams-kpi-value" th:text="${cancelledFlights}">0</div>
+                        <div class="ams-kpi-sub">Suspended ops</div>
+                    </div>
+                </div>
+                <div class="col-6 col-xl">
+                    <div class="ams-kpi-card kpi-info hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-info"><i class="bi bi-flag-check"></i></div>
+                            <span style="font-size: 0.68rem; color: #06b6d4; font-weight: 700; background: #ecfeff; padding: 2px 8px; border-radius: 50px;">DONE</span>
+                        </div>
+                        <div class="ams-kpi-label">Completed</div>
+                        <div class="ams-kpi-value" th:text="${completedFlights}">0</div>
+                        <div class="ams-kpi-sub">Arrived &amp; finished</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- ROW 2 — STATUS OVERVIEW + QUICK ACTIONS               -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div class="row g-4 mb-4">
+
+                <!-- ── A. FLIGHT STATUS OVERVIEW ── -->
+                <div class="col-lg-8">
+                    <div class="ams-card h-100">
+                        <div class="ams-card-header">
+                            <h6 class="ams-card-title">
+                                <span class="ti-blue"><i class="bi bi-pie-chart"></i></span>
+                                Flight Status Overview
+                            </h6>
+                            <span style="font-size: 0.75rem; color: #94a3b8;">Live operational breakdown</span>
+                        </div>
+                        <div class="ams-card-body">
+
+                            <!-- OTP Gauge + Status bars -->
+                            <div class="row align-items-center g-4">
+                                <!-- SVG Gauge -->
+                                <div class="col-md-4 text-center">
+                                    <div class="otp-gauge">
+                                        <svg viewBox="0 0 120 120" width="120" height="120">
+                                            <!-- background ring -->
+                                            <circle cx="60" cy="60" r="50" fill="none" stroke="#e8eef5" stroke-width="12"/>
+                                            <!-- progress ring -->
+                                            <circle cx="60" cy="60" r="50" fill="none"
+                                                    stroke="#10b981" stroke-width="12"
+                                                    stroke-linecap="round"
+                                                    th:attr="stroke-dasharray=${onTimePct * 314 / 100} + ' 314'"/>
+                                        </svg>
+                                        <div class="otp-label">
+                                            <span style="font-size: 1.5rem; font-weight: 800; color: #1e293b;" th:text="${onTimePct + '%'}">0%</span>
+                                            <span style="font-size: 0.65rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">On-Time Rate</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2" style="font-size: 0.78rem; color: #64748b;">Based on all flight records</div>
+                                </div>
+
+                                <!-- Status bars -->
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span style="width:10px; height:10px; border-radius:50%; background:#10b981; display:inline-block;"></span>
+                                                <span style="font-size:0.82rem; font-weight:600; color:#1e293b;">Scheduled</span>
+                                            </div>
+                                            <span style="font-size:0.82rem; font-weight:700; color:#10b981;" th:text="${scheduledFlights}">0</span>
+                                        </div>
+                                        <div class="status-bar">
+                                            <div class="status-bar-fill" style="background:#10b981;"
+                                                 th:style="'background:#10b981; width:' + ${totalFlights > 0 ? (scheduledFlights * 100 / totalFlights) : 0} + '%'"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span style="width:10px; height:10px; border-radius:50%; background:#06b6d4; display:inline-block;"></span>
+                                                <span style="font-size:0.82rem; font-weight:600; color:#1e293b;">Boarding / Departed</span>
+                                            </div>
+                                            <span style="font-size:0.82rem; font-weight:700; color:#06b6d4;" th:text="${activeFlights}">0</span>
+                                        </div>
+                                        <div class="status-bar">
+                                            <div class="status-bar-fill" style="background:#06b6d4;"
+                                                 th:style="'background:#06b6d4; width:' + ${totalFlights > 0 ? (activeFlights * 100 / totalFlights) : 0} + '%'"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span style="width:10px; height:10px; border-radius:50%; background:#f59e0b; display:inline-block;"></span>
+                                                <span style="font-size:0.82rem; font-weight:600; color:#1e293b;">Delayed</span>
+                                            </div>
+                                            <span style="font-size:0.82rem; font-weight:700; color:#f59e0b;" th:text="${delayedFlights}">0</span>
+                                        </div>
+                                        <div class="status-bar">
+                                            <div class="status-bar-fill" style="background:#f59e0b;"
+                                                 th:style="'background:#f59e0b; width:' + ${totalFlights > 0 ? (delayedFlights * 100 / totalFlights) : 0} + '%'"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span style="width:10px; height:10px; border-radius:50%; background:#ef4444; display:inline-block;"></span>
+                                                <span style="font-size:0.82rem; font-weight:600; color:#1e293b;">Cancelled</span>
+                                            </div>
+                                            <span style="font-size:0.82rem; font-weight:700; color:#ef4444;" th:text="${cancelledFlights}">0</span>
+                                        </div>
+                                        <div class="status-bar">
+                                            <div class="status-bar-fill"
+                                                 th:style="'background:#ef4444; width:' + ${totalFlights > 0 ? (cancelledFlights * 100 / totalFlights) : 0} + '%'"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span style="width:10px; height:10px; border-radius:50%; background:#6366f1; display:inline-block;"></span>
+                                                <span style="font-size:0.82rem; font-weight:600; color:#1e293b;">Completed / Arrived</span>
+                                            </div>
+                                            <span style="font-size:0.82rem; font-weight:700; color:#6366f1;" th:text="${completedFlights}">0</span>
+                                        </div>
+                                        <div class="status-bar">
+                                            <div class="status-bar-fill"
+                                                 th:style="'background:#6366f1; width:' + ${totalFlights > 0 ? (completedFlights * 100 / totalFlights) : 0} + '%'"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── B. QUICK OPERATIONS PANEL ── -->
+                <div class="col-lg-4">
+                    <div class="ams-card h-100">
+                        <div class="ams-card-header">
+                            <h6 class="ams-card-title">
+                                <span class="ti-amber"><i class="bi bi-lightning-charge"></i></span>
+                                Quick Operations
+                            </h6>
+                        </div>
+                        <div class="ams-card-body d-flex flex-column gap-2">
+                            <a th:href="@{/manager/flights/new}" class="quick-btn">
+                                <div class="qb-icon" style="background: linear-gradient(135deg,#eff6ff,#dbeafe); color: #3b82f6;">
+                                    <i class="bi bi-plus-circle-fill"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight:700; font-size:0.875rem;">Schedule Flight</div>
+                                    <div style="font-size:0.72rem; color:#94a3b8;">Create new flight operation</div>
+                                </div>
+                                <i class="bi bi-arrow-right qb-arrow"></i>
+                            </a>
+                            <a th:href="@{/manager/flights}" class="quick-btn">
+                                <div class="qb-icon" style="background: linear-gradient(135deg,#f0fdf4,#dcfce7); color: #10b981;">
+                                    <i class="bi bi-calendar-range"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight:700; font-size:0.875rem;">Manage Schedules</div>
+                                    <div style="font-size:0.72rem; color:#94a3b8;">View &amp; edit all flights</div>
+                                </div>
+                                <i class="bi bi-arrow-right qb-arrow"></i>
+                            </a>
+                            <a th:href="@{/manager/routes}" class="quick-btn">
+                                <div class="qb-icon" style="background: linear-gradient(135deg,#fffbeb,#fef3c7); color: #f59e0b;">
+                                    <i class="bi bi-bezier2"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight:700; font-size:0.875rem;">Manage Routes</div>
+                                    <div style="font-size:0.72rem; color:#94a3b8;">Configure route network</div>
+                                </div>
+                                <i class="bi bi-arrow-right qb-arrow"></i>
+                            </a>
+                            <a th:href="@{/manager/airports}" class="quick-btn">
+                                <div class="qb-icon" style="background: linear-gradient(135deg,#fef2f2,#fee2e2); color: #ef4444;">
+                                    <i class="bi bi-building"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight:700; font-size:0.875rem;">Airport Hubs</div>
+                                    <div style="font-size:0.72rem; color:#94a3b8;">Manage airport registry</div>
+                                </div>
+                                <i class="bi bi-arrow-right qb-arrow"></i>
+                            </a>
+                            <a th:href="@{/manager/flight-registry}" class="quick-btn">
+                                <div class="qb-icon" style="background: linear-gradient(135deg,#f5f3ff,#ede9fe); color: #6366f1;">
+                                    <i class="bi bi-airplane"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight:700; font-size:0.875rem;">Fleet Registry</div>
+                                    <div style="font-size:0.72rem; color:#94a3b8;">Aircraft &amp; fleet overview</div>
+                                </div>
+                                <i class="bi bi-arrow-right qb-arrow"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- ROW 3 — UPCOMING DEPARTURES + NETWORK OVERVIEW        -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div class="row g-4 mb-4">
+
+                <!-- ── C. UPCOMING DEPARTURES ── -->
+                <div class="col-lg-8">
+                    <div class="ams-card">
+                        <div class="ams-card-header">
+                            <h6 class="ams-card-title">
+                                <span class="ti-blue"><i class="bi bi-calendar2-check"></i></span>
+                                Upcoming Departures
+                                <span class="badge ms-2" style="background:#eff6ff; color:#3b82f6; font-size:0.72rem; font-weight:700; border-radius:50px; padding: 3px 10px;"
+                                      th:text="${upcomingFlights != null ? upcomingFlights.size() : 0} + ' flights'">0 flights</span>
+                            </h6>
+                            <a th:href="@{/manager/flights}" class="btn btn-sm btn-light fw-semibold" style="border-radius:8px;">
+                                View All <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                        <table class="ams-table">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Flight</th>
+                                    <th>Route</th>
+                                    <th>Aircraft</th>
+                                    <th>Departure</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:if="${upcomingFlights == null or upcomingFlights.empty}">
+                                    <td colspan="5">
+                                        <div class="ams-empty-state">
+                                            <i class="bi bi-calendar-x"></i>
+                                            <p>No upcoming flights scheduled at this time.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:each="f : ${upcomingFlights}">
+                                    <td class="ps-4">
+                                        <div style="font-weight:700; color:#1e293b;" th:text="${f.flightNumber}">UL-000</div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge" style="background:#1e293b; color:white; font-size:0.7rem;" th:text="${f.route.origin.airportCode}">CMB</span>
+                                            <i class="bi bi-arrow-right" style="font-size:0.7rem; color:#94a3b8;"></i>
+                                            <span class="badge" style="background:#1e293b; color:white; font-size:0.7rem;" th:text="${f.route.destination.airportCode}">DXB</span>
+                                            <span class="text-muted d-none d-lg-inline" style="font-size:0.75rem;" th:text="${f.route.origin.city + ' – ' + f.route.destination.city}"></span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span style="font-size:0.8rem; color:#64748b;" th:text="${f.aircraft != null ? f.aircraft.model : '—'}">—</span>
+                                    </td>
+                                    <td>
+                                        <div style="font-size:0.8rem; font-weight:600; color:#374151;" th:text="${#temporals.format(f.departureTime, 'MMM dd')}">—</div>
+                                        <div style="font-size:0.72rem; color:#94a3b8;" th:text="${#temporals.format(f.departureTime, 'HH:mm')}">—</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge rounded-pill"
+                                              th:classappend="'badge-' + ${#strings.toLowerCase(f.flightStatus)}"
+                                              th:text="${f.flightStatus}">SCHEDULED</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ── D. AIRPORT NETWORK OVERVIEW ── -->
+                <div class="col-lg-4">
+                    <div class="ams-card h-100">
+                        <div class="ams-card-header">
+                            <h6 class="ams-card-title">
+                                <span class="ti-green"><i class="bi bi-globe2"></i></span>
+                                Airport Network
+                            </h6>
+                        </div>
+                        <div class="ams-card-body">
+                            <!-- Airport counts -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-6">
+                                    <div class="net-hub-card text-center">
+                                        <div style="font-size: 1.8rem; font-weight: 800; color: #1e293b;" th:text="${totalAirports}">0</div>
+                                        <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #94a3b8;">Total Airports</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="net-hub-card text-center" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-color: #bbf7d0;">
+                                        <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;" th:text="${activeAirports}">0</div>
+                                        <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #10b981;">Active Hubs</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="net-hub-card text-center" style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #bfdbfe;">
+                                        <div style="font-size: 1.8rem; font-weight: 800; color: #3b82f6;" th:text="${totalRoutes}">0</div>
+                                        <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #3b82f6;">Total Routes</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="net-hub-card text-center" style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fde68a;">
+                                        <div style="font-size: 1.8rem; font-weight: 800; color: #f59e0b;" th:text="${activeRoutes}">0</div>
+                                        <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #f59e0b;">Active Routes</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr style="border-color: #f1f5f9;">
+                            <!-- Performance -->
+                            <h6 style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#94a3b8; margin-bottom:12px;">SYSTEM HEALTH</h6>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1" style="font-size:0.8rem;">
+                                    <span class="fw-semibold text-dark">Fleet Utilization</span>
+                                    <span class="fw-bold text-success">85%</span>
+                                </div>
+                                <div class="progress" style="height:6px; border-radius:10px;">
+                                    <div class="progress-bar bg-success" style="width:85%; border-radius:10px;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="d-flex justify-content-between mb-1" style="font-size:0.8rem;">
+                                    <span class="fw-semibold text-dark">On-Time Performance</span>
+                                    <span class="fw-bold text-primary" th:text="${onTimePct + '%'}">0%</span>
+                                </div>
+                                <div class="progress" style="height:6px; border-radius:10px;">
+                                    <div class="progress-bar bg-primary" style="border-radius:10px;"
+                                         th:style="'border-radius:10px; width:' + ${onTimePct} + '%'"></div>
+                                </div>
+                            </div>
+                            <div class="mt-4 d-flex gap-2">
+                                <a th:href="@{/manager/airports}" class="btn btn-sm btn-outline-success fw-semibold flex-grow-1" style="border-radius:10px;">
+                                    <i class="bi bi-building me-1"></i>Airports
+                                </a>
+                                <a th:href="@{/manager/routes}" class="btn btn-sm btn-outline-primary fw-semibold flex-grow-1" style="border-radius:10px;">
+                                    <i class="bi bi-bezier2 me-1"></i>Routes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- ROW 4 — RECENT FLIGHTS ACTIVITY TIMELINE              -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div class="row g-4">
+                <div class="col-lg-12">
+                    <div class="ams-card">
+                        <div class="ams-card-header">
+                            <h6 class="ams-card-title">
+                                <span class="ti-blue"><i class="bi bi-clock-history"></i></span>
+                                Recent Flight Activity
+                            </h6>
+                            <span style="font-size:0.75rem; color:#94a3b8;">Latest 5 flight records</span>
+                        </div>
+                        <div class="ams-card-body" th:if="${recentFlights == null or recentFlights.empty}">
+                            <div class="ams-empty-state">
+                                <i class="bi bi-activity"></i>
+                                <p>No recent flight activity to display.</p>
+                            </div>
+                        </div>
+                        <div class="ams-card-body" th:if="${recentFlights != null and !recentFlights.empty}">
+                            <div th:each="f, stat : ${recentFlights}" class="timeline-item">
+                                <!-- Dot color by status -->
+                                <div class="timeline-dot"
+                                     th:classappend="${f.flightStatus.toString() == 'CANCELLED'} ? 'bg-danger bg-opacity-10 text-danger' :
+                                                    (${f.flightStatus.toString() == 'DELAYED'} ? 'bg-warning bg-opacity-10 text-warning' :
+                                                    (${f.flightStatus.toString() == 'COMPLETED' or f.flightStatus.toString() == 'ARRIVED'} ? 'bg-success bg-opacity-10 text-success' :
+                                                    'bg-primary bg-opacity-10 text-primary'))">
+                                    <i class="bi"
+                                       th:classappend="${f.flightStatus.toString() == 'CANCELLED'} ? 'bi-x-circle-fill' :
+                                                      (${f.flightStatus.toString() == 'DELAYED'} ? 'bi-clock-fill' :
+                                                      (${f.flightStatus.toString() == 'COMPLETED' or f.flightStatus.toString() == 'ARRIVED'} ? 'bi-check-circle-fill' :
+                                                      'bi-airplane-fill'))"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                                        <span style="font-weight:700; font-size:0.9rem; color:#1e293b;" th:text="${f.flightNumber}">UL-000</span>
+                                        <span style="font-size:0.78rem; color:#64748b;">
+                                            <span th:text="${f.route.origin.city}">Origin</span>
+                                            <i class="bi bi-arrow-right mx-1" style="font-size:0.7rem;"></i>
+                                            <span th:text="${f.route.destination.city}">Destination</span>
+                                        </span>
+                                        <span class="badge rounded-pill"
+                                              th:classappend="'badge-' + ${#strings.toLowerCase(f.flightStatus)}"
+                                              th:text="${f.flightStatus}">STATUS</span>
+                                        <span style="margin-left:auto; font-size:0.78rem; color:#94a3b8;"
+                                              th:text="${#temporals.format(f.departureTime, 'dd MMM, HH:mm')}">—</span>
+                                        <a th:href="@{/manager/flights/edit/{id}(id=${f.id})}"
+                                           class="btn btn-xs btn-outline-secondary"
+                                           style="border-radius:8px; font-size:0.72rem; padding: 3px 10px;">
+                                            <i class="bi bi-pencil me-1"></i>Edit
+                                        </a>
+                                    </div>
+                                    <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;"
+                                         th:text="${f.aircraft != null ? f.aircraft.model : 'Aircraft not assigned'}">—</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /ams-content -->
+    </div><!-- /ams-main -->
+</div><!-- /ams-layout -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Animate SVG gauge on load
+    document.addEventListener('DOMContentLoaded', () => {
+        const circle = document.querySelector('.otp-gauge circle:last-child');
+        if (circle) {
+            const val = circle.getAttribute('th:stroke-dasharray') ||
+                        circle.getAttribute('stroke-dasharray') || '0 314';
+            circle.style.strokeDasharray = '0 314';
+            requestAnimationFrame(() => {
+                circle.style.transition = 'stroke-dasharray 1s cubic-bezier(.4,0,.2,1)';
+                circle.style.strokeDasharray = val;
+            });
+        }
+    });
+</script>
+</body>
+</html>
