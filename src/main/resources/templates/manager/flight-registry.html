@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Registry - SkyLanka AMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/custom.css}">
+    <style>
+        .flight-row { transition: background 0.15s; }
+        .flight-row:hover { background: #f8fafc !important; }
+
+        .route-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: #f1f5f9; border-radius: 50px;
+            padding: 4px 10px; font-size: 0.78rem; font-weight: 700;
+        }
+        .route-pill .iata {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #1e293b; color: white;
+            border-radius: 6px; padding: 2px 7px;
+            font-size: 0.72rem; letter-spacing: 0.5px;
+        }
+        .route-pill .arrow { color: #94a3b8; font-size: 0.8rem; }
+
+        .time-cell .date { font-size: 0.72rem; color: #94a3b8; }
+        .time-cell .time { font-size: 0.9rem; font-weight: 700; color: #1e293b; }
+
+        .seat-bar { height: 5px; border-radius: 99px; background: #e8eef5; }
+        .seat-bar-fill { height: 100%; border-radius: 99px; }
+
+        .action-btn {
+            width: 32px; height: 32px;
+            border-radius: 8px; border: 1px solid #e2e8f0;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 0.85rem;
+            transition: all 0.18s;
+            background: white; color: #374151;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .action-btn:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+        .action-btn.success:hover { border-color: #10b981; color: #10b981; background: #f0fdf4; }
+        .action-btn.danger:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+        .action-btn.disabled-shield { border-color: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+
+        .fare-tag { font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px; }
+        .fare-eco { color: #10b981; font-weight: 700; }
+        .fare-biz { color: #3b82f6; font-weight: 700; }
+    </style>
+</head>
+<body class="ams-body">
+<div class="ams-layout">
+    <!-- Sidebar -->
+    <div th:replace="~{fragments/manager-sidebar :: sidebar}"></div>
+    
+    <!-- Main Content -->
+    <div class="ams-main">
+        <!-- Header -->
+        <div th:replace="~{fragments/manager-sidebar :: header(pageTitle='Flight Registry')}"></div>
+        
+        <div class="ams-content">
+    
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 mb-4" role="alert" style="border-radius: 12px;">
+                <i class="bi bi-check-circle-fill me-2"></i><span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 mb-4" role="alert" style="border-radius: 12px;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- ── PAGE STRIP ── -->
+            <div class="ams-page-strip d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                <div>
+                    <div style="font-size:0.72rem; color:#60a5fa; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">
+                        <i class="bi bi-airplane-engines me-1"></i> Fleet & Aircraft Master
+                    </div>
+                    <h4 class="fw-bold text-white mb-1">Aircraft Fleet Registry</h4>
+                    <p style="color:rgba(255,255,255,0.55); margin:0; font-size:0.85rem;">
+                        Overview of all operational aircraft, equipment assignments, and seat capacities.
+                    </p>
+                </div>
+                <a th:href="@{/manager/flights/new}" class="btn-ams-primary btn">
+                    <i class="bi bi-plus-circle me-2"></i>Schedule Flight with Aircraft
+                </a>
+            </div>
+
+            <!-- ── KPI CARDS ── -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-lg-3">
+                    <div class="ams-kpi-card kpi-primary hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-primary"><i class="bi bi-airplane-engines"></i></div>
+                        </div>
+                        <div class="ams-kpi-label">Total Fleet Flights</div>
+                        <div class="ams-kpi-value" th:text="${allFlightsCount}">0</div>
+                        <div class="ams-kpi-sub">Assigned flights</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="ams-kpi-card kpi-success hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-success"><i class="bi bi-grid-3x3-gap"></i></div>
+                        </div>
+                        <div class="ams-kpi-label">Total Fleet Seats</div>
+                        <div class="ams-kpi-value" th:text="${totalSeats}">0</div>
+                        <div class="ams-kpi-sub">Overall capacity</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="ams-kpi-card kpi-info hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-info"><i class="bi bi-check2-circle"></i></div>
+                        </div>
+                        <div class="ams-kpi-label">Available Seats</div>
+                        <div class="ams-kpi-value" th:text="${totalAvailable}">0</div>
+                        <div class="ams-kpi-sub">Ready to book</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="ams-kpi-card kpi-warning hover-lift">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="ams-kpi-icon icon-warning"><i class="bi bi-geo-alt"></i></div>
+                        </div>
+                        <div class="ams-kpi-label">Operational Routes</div>
+                        <div class="ams-kpi-value" th:text="${#lists.size(routes)}">0</div>
+                        <div class="ams-kpi-sub">Active destinations</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── FLIGHT REGISTRY TABLE ── -->
+            <div class="ams-card">
+                <div class="ams-card-header flex-column flex-md-row align-items-start align-items-md-center gap-3">
+                    <h6 class="ams-card-title mb-0">
+                        <span class="ti-blue"><i class="bi bi-card-list"></i></span>
+                        Registered Fleet & Aircraft Assignments
+                        <span class="badge ms-2"
+                              style="background:#eff6ff; color:#3b82f6; font-size:0.72rem; font-weight:700; border-radius:50px; padding:3px 10px;"
+                              th:text="${#lists.size(flights)} + ' assignments'">0 assignments</span>
+                    </h6>
+                    
+                    <div class="ms-md-auto">
+                        <form th:action="@{/manager/flight-registry}" method="get" class="d-flex gap-2 align-items-center">
+                            <div class="input-group" style="max-width:240px;">
+                                <span class="input-group-text bg-white border-end-0" style="border-radius:10px 0 0 10px;">
+                                    <i class="bi bi-search text-muted" style="font-size:0.8rem;"></i>
+                                </span>
+                                <input type="text" name="search" class="form-control form-control-sm border-start-0" 
+                                       placeholder="Search flight/aircraft..." th:value="${search}" style="border-radius:0 10px 10px 0;">
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary fw-semibold" style="border-radius:8px;">Search</button>
+                            <a th:if="${search != null and !search.isEmpty()}" th:href="@{/manager/flight-registry}" class="btn btn-sm btn-light fw-semibold" style="border-radius:8px;">Reset</a>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="ams-table">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Flight</th>
+                                <th>Aircraft & Capacity</th>
+                                <th>Route</th>
+                                <th>Schedule</th>
+                                <th>Fares</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Empty state -->
+                            <tr th:if="${#lists.isEmpty(flights)}">
+                                <td colspan="7">
+                                    <div class="ams-empty-state">
+                                        <i class="bi bi-airplane text-muted"></i>
+                                        <p>No aircraft assignments found matching your search criteria.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- Flight rows -->
+                            <tr class="flight-row" th:each="f : ${flights}">
+                                <!-- Flight number -->
+                                <td class="ps-4">
+                                    <div style="font-weight:800; font-size:0.92rem; color:#1e293b;" th:text="${f.flightNumber}">UL-000</div>
+                                </td>
+                                <!-- Aircraft & Capacity -->
+                                <td>
+                                    <div style="font-size:0.85rem; font-weight:700; color:#1e293b; margin-bottom:2px;" 
+                                         th:text="${f.aircraftType != null ? f.aircraftType : 'Commercial Jet'}"></div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div style="font-size:0.75rem; color:#64748b;">
+                                            <i class="bi bi-person-fill"></i> <span th:text="${f.totalSeats}">0</span> Seats
+                                        </div>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0 fw-bold" style="font-size:0.65rem;">
+                                            <span th:text="${f.availableSeats}">0</span> available
+                                        </span>
+                                    </div>
+                                </td>
+                                <!-- Route -->
+                                <td>
+                                    <div class="route-pill">
+                                        <span class="iata" th:text="${f.route.origin.airportCode}">CMB</span>
+                                        <i class="bi bi-arrow-right arrow"></i>
+                                        <span class="iata" th:text="${f.route.destination.airportCode}">SIN</span>
+                                    </div>
+                                    <div style="font-size:0.7rem; color:#94a3b8; margin-top:4px;"
+                                         th:text="${f.route.distanceKm + ' km'}">0 km</div>
+                                </td>
+                                <!-- Schedule -->
+                                <td>
+                                    <div class="time-cell mb-1 d-flex align-items-center gap-1">
+                                        <i class="bi bi-calendar-event text-secondary" style="font-size:0.7rem;"></i>
+                                        <span class="time" th:text="${#temporals.format(f.departureTime, 'HH:mm')}">00:00</span>
+                                        <span class="date" th:text="${#temporals.format(f.departureTime, 'dd MMM')}">01 Jan</span>
+                                    </div>
+                                    <div class="time-cell d-flex align-items-center gap-1">
+                                        <span class="date ms-3">Arr:</span>
+                                        <span class="time" th:text="${#temporals.format(f.arrivalTime, 'HH:mm')}">00:00</span>
+                                        <span class="date" th:text="${#temporals.format(f.arrivalTime, 'dd MMM')}">01 Jan</span>
+                                    </div>
+                                </td>
+                                <!-- Fares -->
+                                <td>
+                                    <div class="fare-tag"><span style="color:#94a3b8; font-size:0.68rem;">ECO</span><span class="fare-eco" th:text="'$' + ${f.economyFare}">$0</span></div><br>
+                                    <div class="fare-tag mt-1"><span style="color:#94a3b8; font-size:0.68rem;">BIZ</span><span class="fare-biz" th:text="'$' + ${f.businessFare}">$0</span></div>
+                                </td>
+                                <!-- Status Dropdown (inline) -->
+                                <td>
+                                    <form th:action="@{/manager/flights/update-status}" method="post" class="m-0">
+                                        <input type="hidden" name="flightId" th:value="${f.id}">
+                                        <select name="status" class="form-select form-select-sm fw-semibold" 
+                                                onchange="this.form.submit()" 
+                                                style="border-radius:8px; font-size:0.8rem; min-width:110px;"
+                                                th:classappend="${f.flightStatus.name() == 'SCHEDULED' ? 'text-success border-success-subtle bg-success-subtle' : 
+                                                               (f.flightStatus.name() == 'DELAYED' ? 'text-warning border-warning-subtle bg-warning-subtle' : 
+                                                               (f.flightStatus.name() == 'CANCELLED' ? 'text-danger border-danger-subtle bg-danger-subtle' : 'text-primary border-primary-subtle bg-primary-subtle'))}">
+                                            <option th:each="s : ${statuses}" 
+                                                    th:value="${s}" 
+                                                    th:text="${s}" 
+                                                    th:selected="${s == f.flightStatus}"></option>
+                                        </select>
+                                    </form>
+                                </td>
+                                <!-- Actions -->
+                                <td class="text-end pe-4">
+                                    <div class="d-flex align-items-center justify-content-end gap-1">
+                                        <a th:href="@{/staff/seat-inventory(flightId=${f.id})}" class="action-btn success" title="View Seat Matrix">
+                                            <i class="bi bi-grid-3x3-gap"></i>
+                                        </a>
+                                        <a th:href="@{'/manager/flights/edit/' + ${f.id}}" class="action-btn" title="Edit Flight Details">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        
+                                        <!-- Protected delete button when flight has bookings -->
+                                        <button th:if="${bookedFlightIds != null and bookedFlightIds.contains(f.id)}" 
+                                                class="action-btn disabled-shield" 
+                                                title="Cannot delete — booking history exists"
+                                                type="button" disabled>
+                                            <i class="bi bi-shield-lock"></i>
+                                        </button>
+                                        <a th:unless="${bookedFlightIds != null and bookedFlightIds.contains(f.id)}"
+                                           th:href="@{/manager/flight-registry/delete/{id}(id=${f.id})}"
+                                           class="action-btn danger"
+                                           th:data-flight-number="${f.flightNumber}"
+                                           onclick="return confirm('Permanently delete flight ' + this.getAttribute('data-flight-number') + '? This action cannot be undone.');"
+                                           title="Delete Flight">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
