@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Flight Status Tracker - SkyLanka Airways</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div class="container py-5 flex-grow-1">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div>
+                <span class="badge bg-primary-subtle text-primary mb-1 fw-semibold"><i class="bi bi-broadcast me-1"></i>Real-Time Flight Operations</span>
+                <h2 class="fw-bold text-dark mb-0"><i class="bi bi-broadcast me-2 text-danger"></i>Live Flight Departures & Status Board</h2>
+            </div>
+            <a th:href="@{/search}" class="btn btn-outline-primary fw-semibold">
+                <i class="bi bi-search me-1"></i> Search Flights
+            </a>
+        </div>
+
+        <div class="card ops-table-card border-0 shadow-sm rounded-3 bg-white">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-display me-2 text-primary"></i>Airport Departures & Arrivals</h5>
+                <span class="badge bg-success px-3 py-2 fw-semibold" th:text="'Live System Time: ' + ${#temporals.format(#temporals.createNow(), 'HH:mm')}"></span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="ps-3">Flight</th>
+                            <th>Origin</th>
+                            <th>Destination</th>
+                            <th>Scheduled Time</th>
+                            <th>Aircraft</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(flights)}">
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-broadcast display-6 d-block mb-2"></i>
+                                No active flights on the radar at this time.
+                            </td>
+                        </tr>
+                        <tr th:each="f : ${flights}">
+                            <td class="ps-3"><strong class="text-primary fs-5" th:text="${f.flightNumber}">UL-301</strong></td>
+                            <td>
+                                <span class="badge bg-dark" th:text="${f.route.origin.airportCode}"></span>
+                                <span th:text="${f.route.origin.city}"></span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary" th:text="${f.route.destination.airportCode}"></span>
+                                <span th:text="${f.route.destination.city}"></span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${#temporals.format(f.departureTime, 'HH:mm')}"></div>
+                                <small class="text-muted" th:text="${#temporals.format(f.departureTime, 'dd MMM yyyy')}"></small>
+                            </td>
+                            <td><span class="badge bg-light text-dark border" th:text="${f.aircraftType}"></span></td>
+                            <td>
+                                <span class="badge fs-6" 
+                                      th:classappend="'badge-' + ${#strings.toLowerCase(f.flightStatus)}"
+                                      th:text="${f.flightStatus}">SCHEDULED</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
