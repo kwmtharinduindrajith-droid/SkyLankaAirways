@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${flightForm != null and flightForm.id != null ? 'Edit Scheduled Flight - SkyLanka AMS' : 'Schedule New Flight - SkyLanka AMS'}">Schedule New Flight - SkyLanka AMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/custom.css}">
+    <style>
+        .form-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; }
+        .input-group-text { border: 1px solid #e2e8f0; border-right: none; background: #f8fafc; }
+        .form-control, .form-select { border: 1px solid #e2e8f0; font-weight: 500; font-size: 0.95rem; color: #1e293b; padding: 10px 14px; }
+        .form-control:focus, .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+        .input-group > .form-control, .input-group > .form-select { border-left: none; padding-left: 0; }
+        .input-group-text i { color: #94a3b8; font-size: 1.1rem; }
+    </style>
+</head>
+<body class="ams-body">
+    <div class="ams-layout">
+        <!-- Sidebar -->
+        <div th:replace="~{fragments/manager-sidebar :: sidebar}"></div>
+        
+        <!-- Main Content -->
+        <div class="ams-main">
+            <!-- Header -->
+            <div th:replace="~{fragments/manager-sidebar :: header(pageTitle=${flightForm != null and flightForm.id != null ? 'Edit Scheduled Flight' : 'Schedule New Flight'})}"></div>
+            
+            <div class="ams-content">
+                <div class="container-fluid my-2 flex-grow-1">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-10 col-xl-8">
+                            
+                            <!-- Alerts -->
+                            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show border-0 mb-4" role="alert" style="border-radius:12px;">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${errorMessage}"></span>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show border-0 mb-4" role="alert" style="border-radius:12px;">
+                                <i class="bi bi-check-circle-fill me-2"></i><span th:text="${successMessage}"></span>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+
+                            <div class="ams-card">
+                                <div class="ams-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <div>
+                                        <h6 class="ams-card-title mb-0">
+                                            <span class="ti-blue"><i class="bi bi-airplane-engines"></i></span>
+                                            <span th:text="${flightForm != null and flightForm.id != null ? 'Edit Scheduled Flight' : 'Schedule New Flight'}">Schedule New Flight</span>
+                                        </h6>
+                                        <div style="font-size:0.75rem; color:#94a3b8; margin-top:6px;" th:text="${flightForm != null and flightForm.id != null ? 'Update flight details and operational parameters' : 'Flight Operations & Fleet Scheduling Portal'}">Flight Operations & Fleet Scheduling Portal</div>
+                                    </div>
+                                    <a th:href="@{/manager/flights}" class="btn btn-sm btn-light fw-semibold" style="border-radius:8px;">
+                                        <i class="bi bi-arrow-left me-1"></i> Back to Schedules
+                                    </a>
+                                </div>
+
+                                <div class="ams-card-body p-4 p-md-5">
+                                    <form th:action="@{/manager/flights/save}" th:object="${flightForm}" method="post">
+                                        <input type="hidden" th:field="*{id}">
+
+                                        <div class="row g-4">
+                                            <!-- 1. Flight Number -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Flight Number <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-tag text-primary"></i></span>
+                                                    <input type="text" th:field="*{flightNumber}" class="form-control text-uppercase fw-bold" placeholder="e.g. UL-305" required>
+                                                </div>
+                                                <div style="font-size:0.72rem; color:#94a3b8; margin-top:6px;">Format: 2 letters, hyphen, 3-4 digits (e.g. UL-305)</div>
+                                            </div>
+
+                                            <!-- 2. Route -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Assigned Air Route <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-geo-alt text-success"></i></span>
+                                                    <select th:field="*{routeId}" class="form-select" required>
+                                                        <option value="" disabled th:selected="${flightForm.routeId == null}">-- Select Route --</option>
+                                                        <option th:each="r : ${routes}" th:value="${r.id}" 
+                                                                th:selected="${flightForm.routeId == r.id}"
+                                                                th:text="${r.origin.airportCode} + ' (' + ${r.origin.city} + ') ➔ ' + ${r.destination.airportCode} + ' (' + ${r.destination.city} + ') - ' + ${r.distanceKm} + ' km'">
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                                <div style="font-size:0.72rem; margin-top:6px;"><a th:href="@{/manager/routes}" target="_blank" class="text-primary text-decoration-none fw-semibold">+ Create new route</a></div>
+                                            </div>
+
+                                            <!-- 3. Departure Date & Time (Future Only) -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Departure Date & Time <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-calendar-event text-warning"></i></span>
+                                                    <input type="datetime-local" id="depTimeInput" th:field="*{departureTime}" class="form-control" required>
+                                                </div>
+                                                <div style="font-size:0.72rem; color:#ef4444; margin-top:6px; font-weight:600;"><i class="bi bi-shield-check me-1"></i>Past date selection blocked</div>
+                                            </div>
+
+                                            <!-- 4. Arrival Date & Time -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Arrival Date & Time <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-clock text-info"></i></span>
+                                                    <input type="datetime-local" id="arrTimeInput" th:field="*{arrivalTime}" class="form-control" required>
+                                                </div>
+                                                <div style="font-size:0.72rem; color:#94a3b8; margin-top:6px;">Must be at least 30 mins after departure</div>
+                                            </div>
+
+                                            <!-- 5. Aircraft Type -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Aircraft Model <span class="text-danger">*</span></label>
+                                                <select th:field="*{aircraftType}" id="aircraftSelect" class="form-select w-100" style="padding-left:14px; border-radius:8px;" required>
+                                                    <option th:if="${aircraftList != null and !aircraftList.empty}" 
+                                                            th:each="ac : ${aircraftList}" 
+                                                            th:value="${ac.model}" 
+                                                            th:data-capacity="${ac.totalSeats}"
+                                                            th:data-eco="${ac.economySeats}"
+                                                            th:data-bus="${ac.businessSeats}"
+                                                            th:text="${ac.model + ' (' + ac.manufacturer + ' - ' + ac.totalSeats + ' seats)'}">
+                                                    </option>
+                                                    <th:block th:if="${aircraftList == null or aircraftList.empty}">
+                                                        <option value="Airbus A330-300" data-capacity="290" data-eco="262" data-bus="28">Airbus A330-300 (Wide-Body)</option>
+                                                        <option value="Boeing 787-9 Dreamliner" data-capacity="296" data-eco="268" data-bus="28">Boeing 787-9 Dreamliner (Long-Haul)</option>
+                                                    </th:block>
+                                                </select>
+                                                <div id="aircraftDetailsText" style="font-size:0.75rem; color:#3b82f6; margin-top:6px; font-weight: 500;"></div>
+                                            </div>
+
+                                            <!-- 6. Total Seats -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Total Seat Capacity <span class="text-danger">*</span></label>
+                                                <input type="number" th:field="*{totalSeats}" id="totalSeatsInput" class="form-control" style="padding-left:14px; border-radius:8px; background-color: #f1f5f9; cursor: not-allowed;" min="20" max="500" required readonly>
+                                                <div style="font-size:0.72rem; color:#94a3b8; margin-top:6px;"><i class="bi bi-info-circle me-1"></i>Capacity is determined by the selected aircraft</div>
+                                            </div>
+
+                                            <!-- 7. Economy Fare -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Economy Base Fare ($) <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text text-success fw-bold">$</span>
+                                                    <input type="number" step="0.01" th:field="*{economyFare}" class="form-control" min="50" required>
+                                                </div>
+                                            </div>
+
+                                            <!-- 8. Business Fare -->
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Business Base Fare ($) <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text text-primary fw-bold">$</span>
+                                                    <input type="number" step="0.01" th:field="*{businessFare}" class="form-control" min="100" required>
+                                                </div>
+                                                <div style="font-size:0.72rem; color:#94a3b8; margin-top:6px;">Business fare must exceed Economy fare</div>
+                                            </div>
+                                        </div>
+
+                                        <hr class="my-5" style="border-color:#e2e8f0;">
+
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <a th:href="@{/manager/flights}" class="btn btn-outline-secondary fw-semibold" style="border-radius:10px;">Cancel</a>
+                                            <button type="submit" class="btn-ams-primary btn fw-bold px-5" style="border-radius:10px;">
+                                                <i class="bi bi-check2-circle me-1"></i> 
+                                                <span th:text="${flightForm != null and flightForm.id != null ? 'Update Flight' : 'Save & Schedule Flight'}">Save & Schedule Flight</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT: PREVENT PAST DATES & AUTO-FILL AIRCRAFT CAPACITY -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Past dates prevention
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            const minDateTime = now.toISOString().slice(0, 16);
+            const depInput = document.getElementById('depTimeInput');
+            const arrInput = document.getElementById('arrTimeInput');
+            if (depInput) {
+                depInput.min = minDateTime;
+                depInput.addEventListener('change', function() {
+                    if (arrInput) arrInput.min = this.value;
+                });
+            }
+
+            // Aircraft capacity auto-fill
+            const aircraftSelect = document.getElementById('aircraftSelect');
+            const totalSeatsInput = document.getElementById('totalSeatsInput');
+            const detailsText = document.getElementById('aircraftDetailsText');
+
+            function updateCapacity() {
+                if (aircraftSelect.options.length > 0 && aircraftSelect.selectedIndex >= 0) {
+                    const selectedOption = aircraftSelect.options[aircraftSelect.selectedIndex];
+                    const capacity = selectedOption.getAttribute('data-capacity');
+                    const eco = selectedOption.getAttribute('data-eco');
+                    const bus = selectedOption.getAttribute('data-bus');
+                    
+                    if (capacity) {
+                        totalSeatsInput.value = capacity;
+                    }
+                    if (eco && bus) {
+                        detailsText.innerHTML = `<i class="bi bi-diagram-3-fill me-1"></i> Economy: ${eco} | Business: ${bus}`;
+                    } else {
+                        detailsText.innerHTML = '';
+                    }
+                }
+            }
+
+            aircraftSelect.addEventListener('change', updateCapacity);
+            // Run on initial load
+            updateCapacity();
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
