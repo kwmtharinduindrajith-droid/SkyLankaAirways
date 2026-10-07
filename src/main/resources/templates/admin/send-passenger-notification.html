@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Send Notification to Passenger</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}"/>
+</head>
+<body>
+<div th:replace="admin/layout :: header"></div>
+<h2 th:text="${user.fullName} + ' – Travel History'"></h2>
+<table>
+    <thead>
+        <tr><th>Flight</th><th>Date</th><th>From</th><th>To</th></tr>
+    </thead>
+    <tbody>
+        <tr th:each="b : ${bookings}">
+            <td th:text="${b.flight.flightNumber}"></td>
+            <td th:text="${#dates.format(b.flight.departureTime, 'yyyy-MM-dd')}"></td>
+            <td th:text="${b.flight.route.originAirport.city}"></td>
+            <td th:text="${b.flight.route.destinationAirport.city}"></td>
+        </tr>
+    </tbody>
+</table>
+<form th:action="@{/admin/notifications/send}" method="post">
+    <input type="hidden" name="userId" th:value="${user.id}"/>
+    <label>Title: <input type="text" name="title" required/></label><br/>
+    <label>Message:<br/><textarea name="message" rows="4" cols="50" required></textarea></label><br/>
+    <label>Type:
+        <select name="type" required>
+            <option th:each="t : ${T(com.skylanka.airline.enums.NotificationType).values()}"
+                    th:value="${t}" th:text="${t}"></option>
+        </select>
+    </label><br/>
+    <label>Channel:
+        <select name="channel" required>
+            <option th:each="c : ${T(com.skylanka.airline.enums.NotificationChannel).values()}"
+                    th:value="${c}" th:text="${c}"></option>
+        </select>
+    </label><br/>
+    <button type="submit">Send Notification</button>
+</form>
+<div th:replace="admin/layout :: footer"></div>
+</body>
+</html>

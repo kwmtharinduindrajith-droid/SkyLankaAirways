@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Edit Notification</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}"/>
+</head>
+<body>
+<div th:replace="admin/layout :: header"></div>
+<h2>Edit Notification</h2>
+<form th:action="@{'/admin/notifications/update/' + ${notification.id}}" method="post">
+    <label>Title: <input type="text" name="title" th:value="${notification.title}" required/></label><br/>
+    <label>Message:<br/>
+        <textarea name="message" rows="4" cols="50" th:text="${notification.message}" required></textarea>
+    </label><br/>
+    <label>Type:
+        <select name="type" required>
+            <option th:each="t : ${T(com.skylanka.airline.enums.NotificationType).values()}"
+                    th:value="${t}" th:text="${t}"
+                    th:selected="${t == notification.notificationType}"></option>
+        </select>
+    </label><br/>
+    <button type="submit">Update Notification</button>
+</form>
+<div th:replace="admin/layout :: footer"></div>
+</body>
+</html>
