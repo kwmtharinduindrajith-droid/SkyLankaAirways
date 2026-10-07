@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Passenger Dashboard - SkyLanka Airways</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/custom.css}">
+</head>
+<body class="d-flex flex-column min-vh-100 bg-light">
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div class="container my-5">
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-navy text-white">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h3 class="fw-bold mb-1">Welcome, <span th:text="${user.fullName}"></span>!</h3>
+                    <p class="text-light mb-0"><i class="fa-solid fa-passport me-1"></i>SkyLanka SkyPass Member Portal</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a th:href="@{/search}" class="btn btn-warning fw-bold"><i class="fa-solid fa-magnifying-glass me-1"></i>Book New Flight</a>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="fw-bold text-navy mb-3"><i class="fa-solid fa-ticket me-2 text-warning"></i>Your Flight Bookings</h4>
+        <div class="card border-0 shadow-sm rounded-4 p-3">
+            <div class="table-responsive">
+                <table class="table align-middle table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>PNR</th>
+                            <th>Flight</th>
+                            <th>Route</th>
+                            <th>Departure</th>
+                            <th>Seat</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(bookings)}">
+                            <td colspan="7" class="text-center py-4 text-muted">No flight reservations found.</td>
+                        </tr>
+                        <tr th:each="b : ${bookings}">
+                            <td><strong class="text-navy" th:text="${b.pnrNumber}"></strong></td>
+                            <td th:text="${b.flight.flightNumber}"></td>
+                            <td th:text="${b.flight.route.origin.airportCode + ' ➔ ' + b.flight.route.destination.airportCode}"></td>
+                            <td th:text="${#temporals.format(b.flight.departureTime, 'dd MMM, HH:mm')}"></td>
+                            <td><span class="badge bg-light text-dark border" th:text="${b.selectedSeatNumber}"></span></td>
+                            <td>
+                                <span class="badge" th:classappend="${b.bookingStatus.name() == 'CONFIRMED' ? 'bg-success' : (b.bookingStatus.name() == 'CANCELLED' ? 'bg-danger' : 'bg-warning text-dark')}" th:text="${b.bookingStatus}"></span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a th:if="${b.bookingStatus.name() == 'PENDING'}" th:href="@{'/payment/checkout/' + ${b.id}}" class="btn btn-warning fw-bold">Pay</a>
+                                    <a th:if="${b.bookingStatus.name() == 'CONFIRMED'}" th:href="@{'/checkin/online/' + ${b.id}}" class="btn btn-primary">Check-in</a>
+                                    <a th:if="${b.bookingStatus.name() == 'CONFIRMED'}" th:href="@{'/refund/request/' + ${b.id}}" class="btn btn-outline-danger">Refund</a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
