@@ -450,6 +450,7 @@ public class FlightServiceImpl implements FlightService {
 
         flight.setFlightNumber(dto.getFlightNumber().toUpperCase().trim());
         flight.setRoute(route);
+        Long oldAircraftId = flight.getAircraft() != null ? flight.getAircraft().getId() : null;
         flight.setAircraft(aircraft);
         flight.setAircraftType(aircraft.getModel());
         flight.setDepartureTime(dto.getDepartureTime());
@@ -463,7 +464,7 @@ public class FlightServiceImpl implements FlightService {
         // Enforce capacity from Aircraft
         int actualCapacity = aircraft.getTotalSeats();
         
-        boolean aircraftChanged = !flight.getAircraft().getId().equals(aircraft.getId());
+        boolean aircraftChanged = oldAircraftId == null || !oldAircraftId.equals(aircraft.getId());
         
         if (aircraftChanged || flight.getTotalSeats() != actualCapacity) {
              flight.setTotalSeats(actualCapacity);
