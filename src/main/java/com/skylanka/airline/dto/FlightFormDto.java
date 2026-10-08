@@ -11,7 +11,7 @@ public class FlightFormDto {
     private Long id;
 
     @NotBlank(message = "Flight number is required (e.g. UL-301)")
-    @Pattern(regexp = "^[A-Z]{2}-[0-9]{3,4}$", message = "Flight number must match format: 2 letters, hyphen, 3-4 digits (e.g. UL-301, EK-505)")
+    @Pattern(regexp = "^[A-Za-z]{2}-[0-9]{3,4}$", message = "Flight number must match format: 2 letters, hyphen, 3-4 digits (e.g. UL-301, EK-505)")
     private String flightNumber;
 
     @NotNull(message = "Flight route must be selected")
